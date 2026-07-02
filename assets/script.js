@@ -1,12 +1,85 @@
 const navToggle = document.querySelector("[data-nav-toggle]");
 const navLinks = document.querySelector("[data-nav-links]");
 
+window.solveSimpleChallenge = window.solveSimpleChallenge || (() => true);
+
 if (navToggle && navLinks) {
   navToggle.addEventListener("click", () => {
     const isOpen = navLinks.classList.toggle("is-open");
     navToggle.setAttribute("aria-expanded", String(isOpen));
   });
 }
+
+const closeNavSubmenus = (exceptItem = null) => {
+  document.querySelectorAll(".nav__item.is-open").forEach((item) => {
+    if (item === exceptItem) return;
+    item.classList.remove("is-open");
+    item.querySelector(".nav__chevron")?.setAttribute("aria-expanded", "false");
+  });
+};
+
+document.querySelectorAll(".nav__chevron").forEach((button) => {
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const item = button.closest(".nav__item");
+    if (!item) return;
+
+    const isOpen = item.classList.toggle("is-open");
+    closeNavSubmenus(isOpen ? item : null);
+    button.setAttribute("aria-expanded", String(isOpen));
+  });
+});
+
+document.addEventListener("click", (event) => {
+  if (!event.target.closest(".nav")) {
+    closeNavSubmenus();
+  }
+});
+
+const markActiveNav = () => {
+  const currentFile = decodeURIComponent(window.location.pathname.split("/").pop() || "index.html");
+  const currentHash = window.location.hash;
+
+  document.querySelectorAll(".nav__link, .nav__submenu a").forEach((link) => {
+    link.removeAttribute("aria-current");
+  });
+
+  document.querySelectorAll(".nav__item").forEach((item) => item.classList.remove("is-active"));
+
+  document.querySelectorAll(".nav__link").forEach((link) => {
+    const url = new URL(link.getAttribute("href"), window.location.href);
+    const linkFile = decodeURIComponent(url.pathname.split("/").pop() || "index.html");
+
+    if (linkFile === currentFile) {
+      link.setAttribute("aria-current", "page");
+      link.closest(".nav__item")?.classList.add("is-active");
+    }
+  });
+
+  if (!currentHash) return;
+
+  document.querySelectorAll(".nav__submenu a").forEach((link) => {
+    const url = new URL(link.getAttribute("href"), window.location.href);
+    const linkFile = decodeURIComponent(url.pathname.split("/").pop() || "index.html");
+
+    if (linkFile === currentFile && url.hash === currentHash) {
+      link.setAttribute("aria-current", "location");
+    }
+  });
+};
+
+document.querySelectorAll(".nav__links a").forEach((link) => {
+  link.addEventListener("click", () => {
+    navLinks?.classList.remove("is-open");
+    navToggle?.setAttribute("aria-expanded", "false");
+    closeNavSubmenus();
+  });
+});
+
+markActiveNav();
+window.addEventListener("hashchange", markActiveNav);
 
 document.querySelectorAll("[data-toggle-group]").forEach((group) => {
   group.addEventListener("click", (event) => {
@@ -207,6 +280,28 @@ const pathwayJobs = [
 const programFinder = document.querySelector("[data-program-finder]");
 const programResults = document.querySelector("[data-program-results]");
 
+const countryPathways = {
+  Japan: "pathways.html#japan",
+  Italy: "pathways.html#italy",
+  Romania: "pathways.html#romania",
+  Canada: "pathways.html#canada",
+};
+
+const getTrainingLink = (job) => {
+  const normalizedJob = job.toLowerCase();
+
+  if (normalizedJob.includes("care")) return "vocational.html#caregiver";
+  if (normalizedJob.includes("airport")) return "vocational.html#airport-ground-handling";
+  if (normalizedJob.includes("hospitality")) return "vocational.html#hospitality";
+  if (normalizedJob.includes("construction") || normalizedJob.includes("masonry")) return "vocational.html#construction";
+  if (normalizedJob.includes("agriculture")) return "vocational.html#agriculture";
+  if (normalizedJob.includes("driving")) return "vocational.html#commercial-driving";
+  if (normalizedJob.includes("factory") || normalizedJob.includes("manufacturing") || normalizedJob.includes("warehouse")) return "vocational.html#factory-manufacturing";
+  if (normalizedJob.includes("study")) return "pathways.html#canada";
+
+  return "vocational.html";
+};
+
 const renderProgramMatches = () => {
   if (!programFinder || !programResults) return;
 
@@ -240,6 +335,7 @@ const renderProgramMatches = () => {
   }
 
   const primary = matches[0];
+  const pathwayLink = countryPathways[country] || "pathways.html";
   const cards = matches
     .map((item, index) => `
       <article class="job-card${index === 0 ? " is-primary" : ""}">
@@ -250,6 +346,10 @@ const renderProgramMatches = () => {
           <div><dt>Confiance can offer</dt><dd>${item.training}</dd></div>
           <div><dt>Preparation includes</dt><dd>${item.support}</dd></div>
         </dl>
+        <div class="job-card__actions">
+          <a class="button" href="${getTrainingLink(item.job)}">View Training</a>
+          <a class="button button--light" href="contact.html">Book Consultation</a>
+        </div>
       </article>
     `)
     .join("");
@@ -257,6 +357,10 @@ const renderProgramMatches = () => {
   programResults.innerHTML = `
     <div class="finder-results__summary">
       For <strong>${country}</strong>, age <strong>${age}</strong>, <strong>${gender}</strong>, the recommended pathway is <strong>${primary.job}</strong>. Confiance can support this with <strong>${primary.training}</strong>.
+      <div class="section__actions">
+        <a class="button" href="${pathwayLink}">View ${country} Pathway</a>
+        <a class="button button--light" href="contact.html">Talk to a Counselor</a>
+      </div>
     </div>
     <div class="finder-results__grid">${cards}</div>
   `;
@@ -274,6 +378,13 @@ if (programFinder && programResults) {
 
 document.querySelectorAll("form").forEach((form) => {
   if (form.matches("[data-program-finder]")) return;
+  if (form.matches("[data-portal-login]")) {
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      alert("Portal login will be connected soon.");
+    });
+    return;
+  }
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
