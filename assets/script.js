@@ -3,6 +3,23 @@ const navLinks = document.querySelector("[data-nav-links]");
 
 window.solveSimpleChallenge = window.solveSimpleChallenge || (() => true);
 
+const storage = {
+  get(key) {
+    try {
+      return window.sessionStorage?.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  set(key, value) {
+    try {
+      window.sessionStorage?.setItem(key, value);
+    } catch {
+      // Ignore storage restrictions in private/sandboxed browser contexts.
+    }
+  },
+};
+
 if (navToggle && navLinks) {
   navToggle.addEventListener("click", () => {
     const isOpen = navLinks.classList.toggle("is-open");
@@ -33,7 +50,7 @@ document.querySelectorAll(".nav__chevron").forEach((button) => {
 });
 
 document.addEventListener("click", (event) => {
-  if (!event.target.closest(".nav")) {
+  if (!event.target?.closest?.(".nav")) {
     closeNavSubmenus();
   }
 });
@@ -399,7 +416,7 @@ const closeLeadPop = document.querySelector("[data-lead-close]");
 
 if (leadPop) {
   window.setTimeout(() => {
-    if (!sessionStorage.getItem("confianceLeadClosed")) {
+    if (!storage.get("confianceLeadClosed")) {
       leadPop.classList.add("is-visible");
     }
   }, 2400);
@@ -408,6 +425,6 @@ if (leadPop) {
 if (closeLeadPop) {
   closeLeadPop.addEventListener("click", () => {
     leadPop.classList.remove("is-visible");
-    sessionStorage.setItem("confianceLeadClosed", "true");
+    storage.set("confianceLeadClosed", "true");
   });
 }
