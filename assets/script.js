@@ -75,14 +75,16 @@ const markActiveNav = () => {
     }
   });
 
-  if (!currentHash) return;
-
   document.querySelectorAll(".nav__submenu a").forEach((link) => {
     const url = new URL(link.getAttribute("href"), window.location.href);
     const linkFile = decodeURIComponent(url.pathname.split("/").pop() || "index.html");
 
-    if (linkFile === currentFile && url.hash === currentHash) {
-      link.setAttribute("aria-current", "location");
+    if (linkFile !== currentFile) return;
+
+    link.closest(".nav__item")?.classList.add("is-active");
+
+    if (!url.hash || url.hash === currentHash) {
+      link.setAttribute("aria-current", url.hash ? "location" : "page");
     }
   });
 };
